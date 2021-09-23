@@ -1,122 +1,41 @@
-#/bin/bash
+# Criando um script .sh para executar todos os comandos:
+#root@servidor:~# vi script.sh 
+#root@servidor:~# chmod +x script.sh 
+#root@servidor:~# ./script.sh
 
-# Get the Dependencies
-# Copy and paste the whole code box for each step. First install the dependencies:
-
-
-sudo apt-get update
-sudo apt-get -y install autoconf automake build-essential libass-dev libfreetype6-dev \
-  libsdl1.2-dev libtheora-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev \
-  libxcb-xfixes0-dev pkg-config texinfo zlib1g-dev
-
-
-# Now make a directory for the source files that will be downloaded later in this guide:
+apt-get update
+apt-get -y install autoconf automake build-essential git-core libass-dev libgpac-dev libsdl1.2-dev libtheora-dev libtool libvdpau-dev libvorbis-dev libx11-dev libxext-dev libxfixes-dev pkg-config texi2html zlib1g-dev libmp3lame-dev nasm gcc yasm && true
 mkdir ~/ffmpeg_sources
-
-
-# YASM
 cd ~/ffmpeg_sources
-wget http://www.tortall.net/projects/yasm/releases/yasm-1.3.0.tar.gz
-tar xzvf yasm-1.3.0.tar.gz
-cd yasm-1.3.0
-./configure --prefix="$HOME/ffmpeg_build" --bindir="$HOME/bin"
-make
-
-
-# libx264
-cd ~/ffmpeg_sources
-wget http://download.videolan.org/pub/x264/snapshots/last_x264.tar.bz2
-tar xjvf last_x264.tar.bz2
-cd x264-snapshot*
-PATH="$HOME/bin:$PATH" ./configure --prefix="$HOME/ffmpeg_build" --bindir="$HOME/bin" --enable-static --disable-opencl
-PATH="$HOME/bin:$PATH" make
-make install
-make distclean
-make install
-make distclean
-
-
-# libx265
-sudo apt-get install cmake mercurial
-cd ~/ffmpeg_sources
-hg clone https://bitbucket.org/multicoreware/x265
-cd ~/ffmpeg_sources/x265/build/linux
-PATH="$HOME/bin:$PATH" cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$HOME/ffmpeg_build" -DENABLE_SHARED:bool=off ../../source
-make
-make install
-make distclean
-
-
-# libfdk-aac
-cd ~/ffmpeg_sources
-wget -O fdk-aac.tar.gz https://github.com/mstorsjo/fdk-aac/tarball/master
-tar xzvf fdk-aac.tar.gz
-cd mstorsjo-fdk-aac*
+git clone --depth 1 git://github.com/mstorsjo/fdk-aac.git
+cd fdk-aac
 autoreconf -fiv
 ./configure --prefix="$HOME/ffmpeg_build" --disable-shared
-make
+make -j8
 make install
-
-
-# lib3lame
-sudo apt-get install nasm
+make distclean
 cd ~/ffmpeg_sources
-wget http://downloads.sourceforge.net/project/lame/lame/3.99/lame-3.99.5.tar.gz
+wget https://sourceforge.net/projects/lame/files/lame/3.99/lame-3.99.5.tar.gz
 tar xzvf lame-3.99.5.tar.gz
 cd lame-3.99.5
 ./configure --prefix="$HOME/ffmpeg_build" --enable-nasm --disable-shared
-make
+make -j8
 make install
 make distclean
-
-
-# libopus
 cd ~/ffmpeg_sources
-wget http://downloads.xiph.org/releases/opus/opus-1.1.2.tar.gz
-tar xzvf opus-1.1.2.tar.gz
-cd opus-1.1.2
-./configure --prefix="$HOME/ffmpeg_build" --disable-shared
-make
+wget https://ffmpeg.org/releases/ffmpeg-4.2.1.tar.gz
+tar xzvf ffmpeg-4.2.1.tar.gz
+cd ffmpeg-4.2.1
+PKG_CONFIG_PATH="$HOME/ffmpeg_build/lib/pkgconfig"
+export PKG_CONFIG_PATH
+./configure --prefix="$HOME/ffmpeg_build" \
+  --extra-cflags="-I$HOME/ffmpeg_build/include" --extra-ldflags="-L$HOME/ffmpeg_build/lib" \
+  --bindir="$HOME/bin" --extra-libs="-ldl" --enable-gpl --enable-libass --enable-libfdk-aac \
+  --enable-libmp3lame --enable-nonfree
+make -j8
 make install
-make clean
-
-
-# libvpx
-cd ~/ffmpeg_sources
-wget http://storage.googleapis.com/downloads.webmproject.org/releases/webm/libvpx-1.5.0.tar.bz2
-tar xjvf libvpx-1.5.0.tar.bz2
-cd libvpx-1.5.0
-PATH="$HOME/bin:$PATH" ./configure --prefix="$HOME/ffmpeg_build" --disable-examples --disable-unit-tests
-PATH="$HOME/bin:$PATH" make
-make install
-make clean
-
-
-# ffmpeg
-cd ~/ffmpeg_sources
-wget http://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2
-tar xjvf ffmpeg-snapshot.tar.bz2
-cd ffmpeg
-PATH="$HOME/bin:$PATH" PKG_CONFIG_PATH="$HOME/ffmpeg_build/lib/pkgconfig" ./configure \
-  --prefix="$HOME/ffmpeg_build" \
-  --pkg-config-flags="--static" \
-  --extra-cflags="-I$HOME/ffmpeg_build/include" \
-  --extra-ldflags="-L$HOME/ffmpeg_build/lib" \
-  --bindir="$HOME/bin" \
-  --enable-gpl \
-  --enable-libass \
-  --enable-libfdk-aac \
-  --enable-libfreetype \
-  --enable-libmp3lame \
-  --enable-libopus \
-  --enable-libtheora \
-  --enable-libvorbis \
-  --enable-libvpx \
-  --enable-libx264 \
-  --enable-libx265 \
-  --enable-nonfree
-PATH="$HOME/bin:$PATH" make
-make install
+cp ffmpeg /usr/bin/
 make distclean
 hash -r
+ffmpeg 2>&1 | head -n1
 mv ffmpeg /usr/bin/ && chmod 744 /usr/bin/ffmpeg
