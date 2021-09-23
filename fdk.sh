@@ -1,150 +1,123 @@
-## Cleanup Old Junk
-cleanupOld() {
-    rm -rf ffmpeg_build
-    rm -rf ffmpeg_sources
-    yes | sudo apt-get remove -qq \
-        nasm \
-        libx264-dev \
-        libx265-dev \
-        libvpx-dev \
-        libfdk-aac-dev \
-        libopus-dev
-}
+#/bin/bash
 
-## Install Prerequisites
-installLibs() {
-    yes | sudo apt-get update -qq && sudo apt-get upgrade -qq && sudo apt-get install -qq \
-        autoconf \
-        automake \
-        build-essential \
-        cmake \
-        git \
-        libass-dev \
-        libfreetype6-dev \
-        libtool \
-        libvorbis-dev \
-        pkg-config \
-        texinfo \
-        wget \
-        zlib1g-dev \
-        yasm \
-        mercurial \
-        libnuma-dev \
-        openssl \
-        libmp3lame-dev \
-        libnuma-dev \
-        libunistring-dev \
-        libgnutls28-dev
-}
+# Get the Dependencies
+# Copy and paste the whole code box for each step. First install the dependencies:
 
-## Compile nasm
-compileNasm() {
-    apt install nasm -y
-}
 
-## Compile libx264
-compileLibx264() {
-    apt install libx264-dev -y
-}
+sudo apt-get update
+sudo apt-get -y install autoconf automake build-essential libass-dev libfreetype6-dev \
+  libsdl1.2-dev libtheora-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev \
+  libxcb-xfixes0-dev pkg-config texinfo zlib1g-dev
 
-## Compile libx265
-compileLibx265() {
-    apt install libx265-dev libnuma-dev -y
-}
 
-## Compile libvpx
-compileLibvpx() {
-    apt install libvpx-dev -y
-}
+# Now make a directory for the source files that will be downloaded later in this guide:
+mkdir ~/ffmpeg_sources
 
-## Compile libfdk-aac
-compileLibfdkaac() {
-    apt install libfdk-aac-dev -y
-}
 
-compileLibmp3lame() {
-    apt install libopus-dev -y
-}
+# YASM
+cd ~/ffmpeg_sources
+wget http://www.tortall.net/projects/yasm/releases/yasm-1.3.0.tar.gz
+tar xzvf yasm-1.3.0.tar.gz
+cd yasm-1.3.0
+./configure --prefix="$HOME/ffmpeg_build" --bindir="$HOME/bin"
+make
 
-## Compile libopus
-compileLibOpus() {
-    apt install libopus-dev -y
-}
 
-## Compile ffmpeg
-compileFfmpeg() {
-    cd ~/ffmpeg_sources &&
-        wget -O ffmpeg-4.3.1.tar.bz2 https://ffmpeg.org/releases/ffmpeg-4.3.1.tar.bz2 &&
-        tar xjvf ffmpeg-4.3.1.tar.bz2 &&
-        cd ffmpeg-4.3.1 &&
-        PATH="$HOME/bin:$PATH" PKG_CONFIG_PATH="$HOME/ffmpeg_build/lib/pkgconfig" ./configure \
-            --prefix="$HOME/ffmpeg_build" \
-            --pkg-config-flags="--static" \
-            --extra-cflags="-I$HOME/ffmpeg_build/include" \
-            --extra-ldflags="-L$HOME/ffmpeg_build/lib" \
-            --extra-libs="-lpthread -lm" \
-            --bindir="$HOME/bin" \
-            --enable-gpl \
-            --enable-gnutls \
-            --enable-libass \
-            --enable-libfdk-aac \
-            --enable-libfreetype \
-            --enable-libmp3lame \
-            --enable-libopus \
-            --enable-libvorbis \
-            --enable-libvpx \
-            --enable-libx264 \
-            --enable-libx265 \
-            --enable-nonfree &&
-        PATH="$HOME/bin:$PATH" make -j$(nproc) &&
-        make -j$(nproc) install &&
-        hash -r
-}
+# libx264
+cd ~/ffmpeg_sources
+wget http://download.videolan.org/pub/x264/snapshots/last_x264.tar.bz2
+tar xjvf last_x264.tar.bz2
+cd x264-snapshot*
+PATH="$HOME/bin:$PATH" ./configure --prefix="$HOME/ffmpeg_build" --bindir="$HOME/bin" --enable-static --disable-opencl
+PATH="$HOME/bin:$PATH" make
+make install
+make distclean
+make install
+make distclean
 
-## Cleanup
-cleanupNew() {
-    echo "Cleaning up files..."
-    rm -rf ~/ffmpeg_sources
-    rm -rf ~/ffmpeg_build
-}
 
-## The Process
-cd ~
-#echo -e "\e[91mNote: This script requires sudo access. Ctrl+C now if you do not have sudo access.\033[0m"
-#echo -e "\e[91mNote: Some of these steps can take a very long time. Please be patient.\033[0m"
-#echo "Removing old shit..."
-cleanupOld
-mkdir ffmpeg_sources
+# libx265
+sudo apt-get install cmake mercurial
+cd ~/ffmpeg_sources
+hg clone https://bitbucket.org/multicoreware/x265
+cd ~/ffmpeg_sources/x265/build/linux
+PATH="$HOME/bin:$PATH" cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$HOME/ffmpeg_build" -DENABLE_SHARED:bool=off ../../source
+make
+make install
+make distclean
 
-echo "Installing prerequisites..."
-installLibs
 
-echo "Installing nasm..."
-compileNasm
+# libfdk-aac
+cd ~/ffmpeg_sources
+wget -O fdk-aac.tar.gz https://github.com/mstorsjo/fdk-aac/tarball/master
+tar xzvf fdk-aac.tar.gz
+cd mstorsjo-fdk-aac*
+autoreconf -fiv
+./configure --prefix="$HOME/ffmpeg_build" --disable-shared
+make
+make install
 
-echo "Installing libx264..."
-compileLibx264
 
-echo "Installing libx265..."
-compileLibx265
+# lib3lame
+sudo apt-get install nasm
+cd ~/ffmpeg_sources
+wget http://downloads.sourceforge.net/project/lame/lame/3.99/lame-3.99.5.tar.gz
+tar xzvf lame-3.99.5.tar.gz
+cd lame-3.99.5
+./configure --prefix="$HOME/ffmpeg_build" --enable-nasm --disable-shared
+make
+make install
+make distclean
 
-echo "Installing libvpx..."
-compileLibvpx
 
-echo "Installing libfdk-aac..."
-compileLibfdkaac
+# libopus
+cd ~/ffmpeg_sources
+wget http://downloads.xiph.org/releases/opus/opus-1.1.2.tar.gz
+tar xzvf opus-1.1.2.tar.gz
+cd opus-1.1.2
+./configure --prefix="$HOME/ffmpeg_build" --disable-shared
+make
+make install
+make clean
 
-echo "Installing lLibmp3lame..."
-compileLibmp3lame
 
-echo "Installing libopus..."
-compileLibOpus
+# libvpx
+cd ~/ffmpeg_sources
+wget http://storage.googleapis.com/downloads.webmproject.org/releases/webm/libvpx-1.5.0.tar.bz2
+tar xjvf libvpx-1.5.0.tar.bz2
+cd libvpx-1.5.0
+PATH="$HOME/bin:$PATH" ./configure --prefix="$HOME/ffmpeg_build" --disable-examples --disable-unit-tests
+PATH="$HOME/bin:$PATH" make
+make install
+make clean
 
-echo "Compiling ffmpeg...buckle up!"
-compileFfmpeg
 
-cleanupNew
-echo "Completed! Type 'ffmpeg' to verify."
+# ffmpeg
+cd ~/ffmpeg_sources
+wget http://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2
+tar xjvf ffmpeg-snapshot.tar.bz2
+cd ffmpeg
+PATH="$HOME/bin:$PATH" PKG_CONFIG_PATH="$HOME/ffmpeg_build/lib/pkgconfig" ./configure \
+  --prefix="$HOME/ffmpeg_build" \
+  --pkg-config-flags="--static" \
+  --extra-cflags="-I$HOME/ffmpeg_build/include" \
+  --extra-ldflags="-L$HOME/ffmpeg_build/lib" \
+  --bindir="$HOME/bin" \
+  --enable-gpl \
+  --enable-libass \
+  --enable-libfdk-aac \
+  --enable-libfreetype \
+  --enable-libmp3lame \
+  --enable-libopus \
+  --enable-libtheora \
+  --enable-libvorbis \
+  --enable-libvpx \
+  --enable-libx264 \
+  --enable-libx265 \
+  --enable-nonfree
+PATH="$HOME/bin:$PATH" make
+make install
+make distclean
+hash -r
 
-# after install
-apt install libass9 libvorbisenc2 libfdk-aac libmp3lame0 libopus0 libx264 libx265 libvpx  -y
+done
