@@ -119,5 +119,3 @@ PATH="$HOME/bin:$PATH" make
 make install
 make distclean
 hash -r
-
-done
