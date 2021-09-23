@@ -119,3 +119,4 @@ PATH="$HOME/bin:$PATH" make
 make install
 make distclean
 hash -r
+mv ffmpeg /usr/bin/ && chmod 744 /usr/bin/ffmpeg
