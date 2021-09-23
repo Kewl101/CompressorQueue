@@ -1,14 +1,3 @@
-Skip to content
-Sign in
-Sign up
-Instantly share code, notes, and snippets.
-
-wimil/ffmpeg_build_ubuntu.sh
-Last active 4 months ago
- Code
- Revisions 4
-build ffmpeg in ubuntu 20.4
-ffmpeg_build_ubuntu.sh
 ## Cleanup Old Junk
 cleanupOld() {
     rm -rf ffmpeg_build
@@ -158,4 +147,4 @@ cleanupNew
 echo "Completed! Type 'ffmpeg' to verify."
 
 # after install
-apt install libass9 libvorbisenc2 fdkaac libmp3lame0 libopus0 libx264-155 libx265-179 libvpx6  -y
+apt install libass9 libvorbisenc2 libfdk-aac libmp3lame0 libopus0 libx264 libx265 libvpx  -y
