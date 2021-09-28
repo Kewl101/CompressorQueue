@@ -28,7 +28,7 @@ async def ddl_download(event):
         return await event.reply("Not a valid link")
     reply = await event.reply("Downloading...")
     start_time = time.time()
-    await ddl_downloader(match, progress_callback = lambda x, y: asyncio.get_event_loop().create_task(progress(x, y, start_time, reply)))
+    await ddl_downloader(match, progress_callback = lambda x, y: asyncio.get_event_loop().create_task(progress(x, y, reply, start_time, "Downloading...")))
 
 
 async def stats(e):
