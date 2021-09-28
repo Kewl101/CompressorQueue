@@ -16,7 +16,7 @@
 from . import *
 from .config import *
 import aiohttp
-from telethon.helper import _maybe_await
+from telethon.helpers import _maybe_await
 
 WORKING = []
 QUEUE = {}
