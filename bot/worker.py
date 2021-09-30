@@ -18,19 +18,6 @@ from .FastTelethon import download_file, upload_file
 from .funcn import *
 
 
-async def ddl_download(event):
-    match = event.pattern_match.group(1) or await event.get_reply_message()
-    if not match:
-        return await event.reply("`Use with /ddl <link> or reply /ddl to a downloadable link.`")
-    if not isinstance(match, str):
-        match = match.message
-    if not match.starswith("http") or not match.endswith(("mkv", "mp4", "avi")):
-        return await event.reply("Not a valid link")
-    reply = await event.reply("Downloading...")
-    start_time = time.time()
-    await ddl_downloader(match, progress_callback = lambda x, y: asyncio.get_event_loop().create_task(progress(x, y, reply, start_time, "Downloading...")))
-
-
 async def stats(e):
     try:
         wah = e.pattern_match.group(1).decode("UTF-8")
