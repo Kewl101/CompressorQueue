@@ -33,7 +33,7 @@ if not os.path.isdir("thumb/"):
     os.mkdir("thumb/")
 
 
-async def fast_download(download_url, progress_callback=None):
+async def ddl_downloader(download_url, progress_callback=None):
     async with aiohttp.ClientSession() as session:
         async with session.get(download_url, timeout=None) as response:
             filename = download_url.rpartition("/")[-1]
