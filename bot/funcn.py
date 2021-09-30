@@ -15,8 +15,6 @@
 
 from . import *
 from .config import *
-import aiohttp
-from telethon.helpers import _maybe_await
 
 WORKING = []
 QUEUE = {}
@@ -31,24 +29,6 @@ if not os.path.isdir("encode/"):
     os.mkdir("encode/")
 if not os.path.isdir("thumb/"):
     os.mkdir("thumb/")
-
-
-async def ddl_downloader(download_url, progress_callback=None):
-    async with aiohttp.ClientSession() as session:
-        async with session.get(download_url, timeout=None) as response:
-            filename = download_url.rpartition("/")[-1]
-            total_size = int(response.headers.get("content-length", 0)) or None
-            downloaded_size = 0
-            with open(filename, "wb") as f:
-                async for chunk in response.content.iter_chunked(1024):
-                    if chunk:
-                        f.write(chunk)
-                        downloaded_size += len(chunk)
-                    if progress_callback:
-                        await _maybe_await(
-                            progress_callback(downloaded_size, total_size)
-                        )
-            return filename
 
 
 def stdr(seconds: int) -> str:
