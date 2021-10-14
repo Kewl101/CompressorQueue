@@ -13,6 +13,11 @@
 # License can be found in <
 # https://github.com/1Danish-00/CompressorQueue/blob/main/License> .
 
+import os
+import signal
+
+import psutil
+
 from . import *
 from .config import *
 
@@ -140,10 +145,52 @@ async def skip(e):
     out, dl, id = wh.split(";")
     try:
         if QUEUE.get(int(id)):
+            WORKING.clear()
             QUEUE.pop(int(id))
         await e.delete()
         os.remove(dl)
         os.remove(out)
+        # Lets kill ffmpeg else it will run in memory even after deleting
+        # input.
+        for proc in psutil.process_iter():
+            processName = proc.name()
+            processID = proc.pid
+            print(processName, " - ", processID)
+            if processName == "ffmpeg":
+                os.kill(processID, signal.SIGKILL)
     except BaseException:
         pass
     return
+
+
+async def fast_download(e, download_url, filename=None):
+    def progress_callback(d, t):
+        return (
+            asyncio.get_event_loop().create_task(
+                progress(
+                    d,
+                    t,
+                    e,
+                    time.time(),
+                    f"Downloading from {download_url}",
+                )
+            ),
+        )
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(download_url, timeout=None) as response:
+            if not filename:
+                filename = download_url.rpartition("/")[-1]
+            filename = os.path.join("downloads", filename)
+            total_size = int(response.headers.get("content-length", 0)) or None
+            downloaded_size = 0
+            with open(filename, "wb") as f:
+                async for chunk in response.content.iter_chunked(1024):
+                    if chunk:
+                        f.write(chunk)
+                        downloaded_size += len(chunk)
+                    if progress_callback:
+                        await _maybe_await(
+                            progress_callback(downloaded_size, total_size)
+                        )
+            return filename
